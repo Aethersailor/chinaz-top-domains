@@ -54,6 +54,14 @@ def verify_output_directory(output_dir: Path) -> dict[str, Any]:
 
     if manifest.get("schema_version") != 1:
         raise IntegrityError("unsupported manifest schema")
+    source_update_dates = manifest.get("source_update_dates")
+    if (
+        not isinstance(source_update_dates, list)
+        or not source_update_dates
+        or any(not isinstance(value, str) for value in source_update_dates)
+        or manifest.get("source_updated_at") not in source_update_dates
+    ):
+        raise IntegrityError("invalid source update date metadata")
 
     all_details = manifest.get("all")
     ranking_details = manifest.get("ranking")
