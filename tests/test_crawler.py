@@ -10,11 +10,13 @@ from chinaz_top_domains.crawler import (
     CrawlError,
     FullCrawlResult,
     ParsedSite,
+    RejectedSite,
     SiteEntry,
     deduplicate,
     normalize_hostname,
     parse_max_pages,
     parse_page,
+    parse_ranked_hostnames,
 )
 
 HTML = """
@@ -54,6 +56,14 @@ def test_parse_page_and_public_suffix_normalization() -> None:
 
 def test_parse_max_pages() -> None:
     assert parse_max_pages(HTML) == 3457
+
+
+def test_parse_ranked_hostnames_preserves_source_entries() -> None:
+    assert parse_ranked_hostnames(HTML) == [
+        (1, "www.example.com"),
+        (2, "blog.example.com"),
+        (3, "sina.com.cn"),
+    ]
 
 
 def test_deduplicate_keeps_best_source_rank() -> None:
@@ -101,6 +111,8 @@ def test_crawl_all_fetches_each_page_once(monkeypatch) -> None:
     assert result.fetched_pages == 2
     assert result.max_pages == 2
     assert result.source_entries == 6
+    assert result.parsed_source_entries == 6
+    assert result.rejected_entries == ()
     assert [entry.domain for entry in result.entries] == [
         "example.com",
         "sina.com.cn",
@@ -120,6 +132,8 @@ def test_write_full_outputs_marks_short_snapshot(tmp_path) -> None:
         fetched_pages=1,
         max_pages=1,
         source_entries=4,
+        parsed_source_entries=3,
+        rejected_entries=(RejectedSite(4, "127.0.0.1", "ip_address"),),
         source_updated_at="2026-08-16",
         source_update_dates=("2026-08-16",),
     )

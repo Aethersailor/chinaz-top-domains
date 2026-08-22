@@ -62,6 +62,16 @@ def verify_output_directory(output_dir: Path) -> dict[str, Any]:
         or manifest.get("source_updated_at") not in source_update_dates
     ):
         raise IntegrityError("invalid source update date metadata")
+    source_entries = manifest.get("source_entries")
+    parsed_source_entries = manifest.get("parsed_source_entries")
+    filtered_source_entries = manifest.get("filtered_source_entries")
+    if (
+        not isinstance(source_entries, int)
+        or not isinstance(parsed_source_entries, int)
+        or not isinstance(filtered_source_entries, list)
+        or source_entries - parsed_source_entries != len(filtered_source_entries)
+    ):
+        raise IntegrityError("invalid filtered source entry metadata")
 
     all_details = manifest.get("all")
     ranking_details = manifest.get("ranking")

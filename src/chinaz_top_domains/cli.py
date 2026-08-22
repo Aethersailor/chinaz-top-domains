@@ -236,6 +236,15 @@ def write_full_outputs(
         "source_updated_at": result.source_updated_at,
         "source_update_dates": list(result.source_update_dates),
         "source_entries": result.source_entries,
+        "parsed_source_entries": result.parsed_source_entries,
+        "filtered_source_entries": [
+            {
+                "source_rank": entry.source_rank,
+                "hostname": entry.hostname,
+                "reason": entry.reason,
+            }
+            for entry in result.rejected_entries
+        ],
         "unique_domains": len(result.entries),
         "fetched_pages": result.fetched_pages,
         "max_pages": result.max_pages,

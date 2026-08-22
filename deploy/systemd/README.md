@@ -17,7 +17,7 @@ sudo install -d -o chinaz-domains -g chinaz-domains /var/cache/chinaz-top-domain
 sudo install -d -o chinaz-domains -g chinaz-domains /var/lib/chinaz-top-domains
 
 sudo python3 -m venv /opt/chinaz-top-domains/venv
-sudo /opt/chinaz-top-domains/venv/bin/python -m pip install ./chinaz_top_domains-0.1.3-py3-none-any.whl
+sudo /opt/chinaz-top-domains/venv/bin/python -m pip install ./chinaz_top_domains-0.1.4-py3-none-any.whl
 
 sudo install -o root -g root -m 0755 deploy/run-and-publish.sh /opt/chinaz-top-domains/
 sudo install -o root -g root -m 0644 deploy/systemd/chinaz-top-domains.env.example /etc/default/chinaz-top-domains
