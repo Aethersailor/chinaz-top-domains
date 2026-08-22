@@ -7,7 +7,7 @@ import os
 import sys
 import tempfile
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TextIO
 
@@ -224,7 +224,7 @@ def write_full_outputs(
     manifest = {
         "schema_version": 1,
         "tool_version": __version__,
-        "generated_at": datetime.now(UTC).isoformat(),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "source": BASE_URL,
         "source_updated_at": result.source_updated_at,
         "source_entries": result.source_entries,
