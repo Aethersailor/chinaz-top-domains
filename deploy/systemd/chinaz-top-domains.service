@@ -1,0 +1,21 @@
+[Unit]
+Description=Generate ChinaZ top-domain snapshots
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=chinaz-domains
+Group=chinaz-domains
+WorkingDirectory=/var/lib/chinaz-top-domains
+ExecStart=/opt/chinaz-top-domains/venv/bin/chinaz-top-domains --full --cache-dir /var/cache/chinaz-top-domains --output-dir /var/lib/chinaz-top-domains/output
+TimeoutStartSec=6h
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/cache/chinaz-top-domains /var/lib/chinaz-top-domains
+RestrictAddressFamilies=AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target
