@@ -92,13 +92,39 @@ def required_workflows_succeeded(repository: str, head_sha: str) -> bool:
     return True
 
 
-def dispatch_master_checks(repository: str) -> None:
-    for workflow in ("ci.yml", "codeql.yml"):
-        api(
-            "POST",
-            f"/repos/{repository}/actions/workflows/{workflow}/dispatches",
-            {"ref": "master"},
-        )
+def enable_auto_merge(pull: dict[str, Any]) -> None:
+    response = api(
+        "POST",
+        "/graphql",
+        {
+            "query": """
+                mutation EnableAutoMerge(
+                  $pullRequestId: ID!
+                  $headline: String!
+                  $body: String!
+                ) {
+                  enablePullRequestAutoMerge(input: {
+                    pullRequestId: $pullRequestId
+                    mergeMethod: SQUASH
+                    commitHeadline: $headline
+                    commitBody: $body
+                  }) {
+                    pullRequest {
+                      number
+                      autoMergeRequest { enabledAt }
+                    }
+                  }
+                }
+            """,
+            "variables": {
+                "pullRequestId": pull["node_id"],
+                "headline": pull["title"],
+                "body": "Automated Dependabot update.",
+            },
+        },
+    )
+    if errors := response.get("errors"):
+        raise RuntimeError(f"GitHub did not enable auto-merge: {errors}")
 
 
 def main() -> int:
@@ -115,25 +141,18 @@ def main() -> int:
     if not required_workflows_succeeded(repository, head_sha):
         return 0
 
-    # Re-read immediately before merging to close the synchronize race window.
+    # Re-read immediately before enabling auto-merge to close the synchronize race window.
     pull = api("GET", f"/repos/{repository}/pulls/{pull['number']}")
     validate_pull_request(pull, repository, head_sha)
-    result = api(
-        "PUT",
-        f"/repos/{repository}/pulls/{pull['number']}/merge",
-        {
-            "sha": head_sha,
-            "merge_method": "squash",
-            "commit_title": pull["title"],
-            "commit_message": "Automated Dependabot update.",
-        },
-    )
-    if not result.get("merged"):
-        raise RuntimeError(f"GitHub did not merge PR #{pull['number']}: {result}")
+    if pull.get("mergeable_state") != "clean":
+        print(f"Waiting for a current, mergeable branch: state={pull.get('mergeable_state')}")
+        return 0
+    if pull.get("auto_merge") is not None:
+        print(f"Auto-merge is already enabled for Dependabot PR #{pull['number']}.")
+        return 0
 
-    print(f"Merged Dependabot PR #{pull['number']} at {head_sha}.")
-    dispatch_master_checks(repository)
-    print("Dispatched post-merge CI and CodeQL checks on master.")
+    enable_auto_merge(pull)
+    print(f"Enabled squash auto-merge for Dependabot PR #{pull['number']} at {head_sha}.")
     return 0
 
 
