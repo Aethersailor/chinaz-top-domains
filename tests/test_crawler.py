@@ -121,6 +121,7 @@ def test_write_full_outputs_marks_short_snapshot(tmp_path) -> None:
         max_pages=1,
         source_entries=4,
         source_updated_at="2026-08-16",
+        source_update_dates=("2026-08-16",),
     )
 
     manifest_path = write_full_outputs(result, tmp_path, snapshots=(2, 5))
@@ -151,15 +152,19 @@ def test_write_full_outputs_marks_short_snapshot(tmp_path) -> None:
     assert manifest_is_current_and_valid(manifest_path, "2026-08-16") is False
 
 
-def test_crawl_all_rejects_mixed_update_dates(monkeypatch) -> None:
+def test_crawl_all_records_mixed_update_dates(monkeypatch) -> None:
     first_page = HTML.replace("index_3457.html", "index_2.html").replace(">3457<", ">2<")
     second_page = first_page.replace("2026-08-16", "2026-08-23")
+    second_page = second_page.replace("<strong>1</strong>", "<strong>4</strong>")
+    second_page = second_page.replace("<strong>2</strong>", "<strong>5</strong>")
+    second_page = second_page.replace("<strong>3</strong>", "<strong>6</strong>")
     pages = {1: first_page, 2: second_page}
 
     with ChinazCrawler(workers=1, interval=0) as crawler:
         monkeypatch.setattr(crawler, "_fetch", lambda page: pages[page])
-        with pytest.raises(CrawlError, match="ranking update"):
-            crawler.crawl_all()
+        result = crawler.crawl_all()
+
+    assert result.source_update_dates == ("2026-08-16", "2026-08-23")
 
 
 @pytest.mark.parametrize("status", [403, 404, 429])

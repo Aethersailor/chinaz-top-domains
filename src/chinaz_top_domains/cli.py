@@ -234,6 +234,7 @@ def write_full_outputs(
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "source": BASE_URL,
         "source_updated_at": result.source_updated_at,
+        "source_update_dates": list(result.source_update_dates),
         "source_entries": result.source_entries,
         "unique_domains": len(result.entries),
         "fetched_pages": result.fetched_pages,
@@ -330,7 +331,15 @@ def _run(args: argparse.Namespace, output_dir: Path) -> int:
         ) as crawler:
             result = crawler.crawl_all(show_progress)
         print(file=sys.stderr)
-        if result.source_updated_at != source.updated_at or result.max_pages != source.max_pages:
+
+        with ChinazCrawler(
+            workers=1,
+            interval=interval,
+            timeout=args.timeout,
+            retries=args.retries,
+        ) as final_inspector:
+            final_source = final_inspector.inspect_source()
+        if final_source != source:
             raise CrawlError(
                 "the ranking metadata changed between inspection and the complete crawl"
             )

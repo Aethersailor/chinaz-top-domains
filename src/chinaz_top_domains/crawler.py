@@ -54,6 +54,7 @@ class FullCrawlResult:
     max_pages: int
     source_entries: int
     source_updated_at: str
+    source_update_dates: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -385,6 +386,7 @@ class ChinazCrawler:
             raise CrawlError("page 1 contained no parseable ranking entries")
 
         parsed: list[ParsedSite] = list(first_entries)
+        source_update_dates = {source_updated_at}
         fetched_pages = 1
         if progress is not None:
             progress(fetched_pages, max_pages, len(parsed))
@@ -396,11 +398,9 @@ class ChinazCrawler:
             fetched = self._fetch_pages(pages)
             for page in pages:
                 page_updated_at = parse_update_date(fetched[page])
-                if page_updated_at != source_updated_at:
-                    raise CrawlError(
-                        f"page {page} belonged to ranking update {page_updated_at!r}; "
-                        f"expected {source_updated_at!r}"
-                    )
+                if page_updated_at is None:
+                    raise CrawlError(f"page {page} did not contain the ranking update date")
+                source_update_dates.add(page_updated_at)
                 page_entries = parse_page(fetched[page], page, self._extractor)
                 if not page_entries:
                     raise CrawlError(f"page {page} contained no parseable ranking entries")
@@ -416,4 +416,5 @@ class ChinazCrawler:
             max_pages=max_pages,
             source_entries=len(parsed),
             source_updated_at=source_updated_at,
+            source_update_dates=tuple(sorted(source_update_dates)),
         )
