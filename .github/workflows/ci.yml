@@ -19,6 +19,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: ${{ matrix.python-version }}
@@ -30,6 +32,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.13"
@@ -37,6 +41,11 @@ jobs:
       - run: python -m pip install --disable-pip-version-check -e ".[dev]"
       - run: python -m ruff format --check .
       - run: python -m ruff check .
+      - name: Validate commit titles
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: python tools/check_commit_messages.py --base "$BASE_SHA" --head "$HEAD_SHA"
       - run: python -m build
       - run: python -m pip install --force-reinstall --no-deps dist/*.whl
       - run: chinaz-top-domains --version

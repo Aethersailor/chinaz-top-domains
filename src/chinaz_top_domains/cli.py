@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import hashlib
 import json
 import os
 import sys
@@ -16,6 +15,7 @@ from filelock import FileLock, Timeout
 
 from . import __version__
 from .crawler import BASE_URL, ChinazCrawler, CrawlError, FullCrawlResult, SiteEntry
+from .integrity import IntegrityError, sha256_file, verify_output_directory
 
 DEFAULT_SNAPSHOTS = (500, 10_000, 100_000)
 
@@ -69,6 +69,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--full",
         action="store_true",
         help="抓取完整榜单一次，并生成多个快照和完整结果",
+    )
+    mode.add_argument(
+        "--verify-output",
+        type=Path,
+        metavar="DIR",
+        help="验证完整结果目录的哈希、计数、顺序和前缀关系",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument(
@@ -147,7 +153,7 @@ def write_outputs(entries: list[SiteEntry], output_dir: Path) -> tuple[Path, Pat
             handle.write(f"{entry.domain}\n")
 
     def write_ranking(handle: TextIO) -> None:
-        writer = csv.writer(handle)
+        writer = csv.writer(handle, lineterminator="\n")
         writer.writerow(["normalized_rank", "source_rank", "domain", "hostname", "name", "page"])
         for entry in entries:
             writer.writerow(
@@ -174,14 +180,6 @@ def _write_domain_list(path: Path, entries: list[SiteEntry]) -> None:
     _atomic_write(path, writer)
 
 
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
 def write_full_outputs(
     result: FullCrawlResult,
     output_dir: Path,
@@ -198,7 +196,7 @@ def write_full_outputs(
             "requested": requested,
             "actual": len(selected),
             "complete": len(selected) == requested,
-            "sha256": _sha256(path),
+            "sha256": sha256_file(path),
         }
 
     all_path = output_dir / "all.txt"
@@ -207,7 +205,7 @@ def write_full_outputs(
     ranking_path = output_dir / "ranking.csv"
 
     def write_ranking(handle: TextIO) -> None:
-        writer = csv.writer(handle)
+        writer = csv.writer(handle, lineterminator="\n")
         writer.writerow(["normalized_rank", "source_rank", "domain", "hostname", "name", "page"])
         for entry in result.entries:
             writer.writerow(
@@ -237,12 +235,12 @@ def write_full_outputs(
         "all": {
             "file": all_path.name,
             "actual": len(result.entries),
-            "sha256": _sha256(all_path),
+            "sha256": sha256_file(all_path),
         },
         "ranking": {
             "file": ranking_path.name,
             "rows": len(result.entries),
-            "sha256": _sha256(ranking_path),
+            "sha256": sha256_file(ranking_path),
         },
     }
     manifest_path = output_dir / "manifest.json"
@@ -261,7 +259,7 @@ def manifest_is_current_and_valid(
     max_pages: int | None = None,
 ) -> bool:
     try:
-        manifest = json.loads(path.read_text(encoding="utf-8"))
+        manifest = verify_output_directory(path.parent)
         if manifest.get("source_updated_at") != source_updated_at:
             return False
         if manifest.get("tool_version") != __version__:
@@ -269,20 +267,7 @@ def manifest_is_current_and_valid(
         if max_pages is not None and manifest.get("max_pages") != max_pages:
             return False
 
-        files: dict[str, str] = {}
-        for filename, details in manifest["snapshots"].items():
-            files[filename] = details["sha256"]
-        for section in ("all", "ranking"):
-            details = manifest[section]
-            files[details["file"]] = details["sha256"]
-
-        for filename, expected_hash in files.items():
-            if Path(filename).name != filename:
-                return False
-            file_path = path.parent / filename
-            if not file_path.is_file() or _sha256(file_path) != expected_hash:
-                return False
-    except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError):
+    except (IntegrityError, KeyError, OSError, TypeError, ValueError, json.JSONDecodeError):
         return False
     return True
 
@@ -290,6 +275,14 @@ def manifest_is_current_and_valid(
 def _run(args: argparse.Namespace, output_dir: Path) -> int:
     workers = args.workers if args.workers is not None else (1 if args.full else 4)
     interval = args.interval if args.interval is not None else (2.0 if args.full else 0.5)
+
+    if args.verify_output is not None:
+        manifest = verify_output_directory(args.verify_output.resolve())
+        print(
+            f"结果校验通过：{manifest['unique_domains']} 个唯一域名；"
+            f"源榜单日期 {manifest['source_updated_at']}。"
+        )
+        return 0
 
     if args.full:
         with ChinazCrawler(
@@ -370,7 +363,11 @@ def main(argv: list[str] | None = None) -> int:
         print("错误：--force 只能与 --full 一起使用。", file=sys.stderr)
         return 2
 
-    output_dir = args.output_dir.resolve()
+    output_dir = (
+        args.verify_output.resolve()
+        if args.verify_output is not None
+        else args.output_dir.resolve()
+    )
     output_dir.parent.mkdir(parents=True, exist_ok=True)
     lock_path = output_dir.with_name(f".{output_dir.name}.lock")
     try:
@@ -382,6 +379,6 @@ def main(argv: list[str] | None = None) -> int:
     except KeyboardInterrupt:
         print("抓取已取消；已缓存页面可用于续跑。", file=sys.stderr)
         return 130
-    except (CrawlError, OSError, ValueError) as exc:
+    except (CrawlError, IntegrityError, OSError, ValueError) as exc:
         print(f"抓取失败：{exc}", file=sys.stderr)
         return 1

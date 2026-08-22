@@ -8,7 +8,9 @@ Type=oneshot
 User=chinaz-domains
 Group=chinaz-domains
 WorkingDirectory=/var/lib/chinaz-top-domains
-ExecStart=/opt/chinaz-top-domains/venv/bin/chinaz-top-domains --full --cache-dir /var/cache/chinaz-top-domains --output-dir /var/lib/chinaz-top-domains/output
+Environment=HOME=/var/lib/chinaz-top-domains
+EnvironmentFile=/etc/default/chinaz-top-domains
+ExecStart=/opt/chinaz-top-domains/run-and-publish.sh
 TimeoutStartSec=6h
 NoNewPrivileges=true
 PrivateTmp=true
