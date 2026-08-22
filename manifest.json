@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "tool_version": "0.1.4",
+  "generated_at": "2026-08-22T06:27:37.758951+00:00",
+  "source": "https://top.chinaz.com/all/",
+  "source_updated_at": "2026-08-16",
+  "source_update_dates": [
+    "2026-08-09",
+    "2026-08-16"
+  ],
+  "source_entries": 103707,
+  "parsed_source_entries": 103699,
+  "filtered_source_entries": [
+    {
+      "source_rank": 60632,
+      "hostname": "%E5%8C%97%E9%BE%99%E4%B8%AD%E7%BD%91.%E7%BD%91%E5%9D%80",
+      "reason": "non_registrable_domain"
+    },
+    {
+      "source_rank": 67418,
+      "hostname": "edu.cn",
+      "reason": "non_registrable_domain"
+    },
+    {
+      "source_rank": 77572,
+      "hostname": "gov.cn",
+      "reason": "non_registrable_domain"
+    },
+    {
+      "source_rank": 99014,
+      "hostname": "210.42.121.241",
+      "reason": "ip_address"
+    },
+    {
+      "source_rank": 101751,
+      "hostname": "net.cn",
+      "reason": "non_registrable_domain"
+    },
+    {
+      "source_rank": 102293,
+      "hostname": "jx.cn",
+      "reason": "non_registrable_domain"
+    },
+    {
+      "source_rank": 103114,
+      "hostname": "183.136.132.24",
+      "reason": "ip_address"
+    },
+    {
+      "source_rank": 103120,
+      "hostname": "nx.cn",
+      "reason": "non_registrable_domain"
+    }
+  ],
+  "unique_domains": 88658,
+  "fetched_pages": 3457,
+  "max_pages": 3457,
+  "snapshots": {
+    "top500.txt": {
+      "requested": 500,
+      "actual": 500,
+      "complete": true,
+      "sha256": "c4bfc62f4385ff6886665ec4c5dfe45227d5d0d5ec0379588b38ec44bb45943a"
+    },
+    "top10000.txt": {
+      "requested": 10000,
+      "actual": 10000,
+      "complete": true,
+      "sha256": "24589a8a92182a31f256253b508b1e25afa2a458b60d8af9dcc728e68c8ef5a5"
+    },
+    "top100000.txt": {
+      "requested": 100000,
+      "actual": 88658,
+      "complete": false,
+      "sha256": "586331fae55067da689d15b5838bc7bed2f6a66c4201cbd2a45ef8650c0d26e9"
+    }
+  },
+  "all": {
+    "file": "all.txt",
+    "actual": 88658,
+    "sha256": "586331fae55067da689d15b5838bc7bed2f6a66c4201cbd2a45ef8650c0d26e9"
+  },
+  "ranking": {
+    "file": "ranking.csv",
+    "rows": 88658,
+    "sha256": "6c901ce0f01dbfdd3ed8d684173217e30e684f506b16c6871946c8d0d9b495a2"
+  }
+}
