@@ -72,7 +72,20 @@ def validate_pull_request(pull: dict[str, Any], repository: str, head_sha: str) 
         raise RuntimeError("Dependabot PR validation failed: " + ", ".join(rejected))
 
 
-def enable_auto_merge(pull: dict[str, Any]) -> None:
+def dependabot_commit_headline(repository: str, pull: dict[str, Any], head_sha: str) -> str:
+    commits = api("GET", f"/repos/{repository}/pulls/{pull['number']}/commits?per_page=2")
+    if len(commits) != 1 or commits[0]["sha"] != head_sha:
+        raise RuntimeError("Dependabot PR must contain exactly the validated head commit")
+
+    headline = commits[0]["commit"]["message"].splitlines()[0]
+    if len(headline) > 100:
+        raise RuntimeError("Dependabot commit title exceeds 100 characters")
+    if headline.endswith((".", "。")) or TITLE_PATTERN.fullmatch(headline) is None:
+        raise RuntimeError("Dependabot commit title does not follow the project convention")
+    return headline
+
+
+def enable_auto_merge(pull: dict[str, Any], headline: str) -> None:
     response = api(
         "POST",
         "/graphql",
@@ -98,7 +111,7 @@ def enable_auto_merge(pull: dict[str, Any]) -> None:
             """,
             "variables": {
                 "pullRequestId": pull["node_id"],
-                "headline": pull["title"],
+                "headline": headline,
                 "body": "Automated Dependabot update.",
             },
         },
@@ -126,7 +139,8 @@ def main() -> int:
         print(f"Auto-merge is already enabled for Dependabot PR #{pull['number']}.")
         return 0
 
-    enable_auto_merge(pull)
+    headline = dependabot_commit_headline(repository, pull, head_sha)
+    enable_auto_merge(pull, headline)
     print(f"Enabled squash auto-merge for Dependabot PR #{pull['number']} at {head_sha}.")
     return 0
 
