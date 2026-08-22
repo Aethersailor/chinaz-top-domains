@@ -7,7 +7,6 @@ on:
 
 permissions:
   actions: write
-  checks: read
   contents: write
   pull-requests: write
 
@@ -32,5 +31,4 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           WORKFLOW_RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           WORKFLOW_RUN_PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
-          REQUIRED_WORKFLOWS: CI,CodeQL,Dependency Review
         run: python tools/dependabot_automerge.py
