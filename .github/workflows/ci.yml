@@ -46,7 +46,7 @@ jobs:
       - name: Validate commit titles
         env:
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.sha }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: python tools/check_commit_messages.py --base "$BASE_SHA" --head "$HEAD_SHA"
       - run: python -m build
       - run: python -m pip install --force-reinstall --no-deps dist/*.whl
