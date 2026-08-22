@@ -5,7 +5,7 @@ import os
 import re
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from ipaddress import ip_address
@@ -48,11 +48,20 @@ class ParsedSite:
 
 
 @dataclass(frozen=True, slots=True)
+class RejectedSite:
+    source_rank: int
+    hostname: str
+    reason: str
+
+
+@dataclass(frozen=True, slots=True)
 class FullCrawlResult:
     entries: list[SiteEntry]
     fetched_pages: int
     max_pages: int
     source_entries: int
+    parsed_source_entries: int
+    rejected_entries: tuple[RejectedSite, ...]
     source_updated_at: str
     source_update_dates: tuple[str, ...]
 
@@ -151,6 +160,38 @@ def parse_page(
     return parsed
 
 
+def parse_ranked_hostnames(html: str) -> list[tuple[int, str]]:
+    tree = HTMLParser(html)
+    ranked: list[tuple[int, str]] = []
+    for item in tree.css(".TopListCent-listWrap .listCentent li"):
+        rank_node = item.css_first(".RtCRateCent strong")
+        hostname_node = item.css_first(".rightTxtHead .col-gray")
+        if rank_node is None:
+            continue
+        rank_text = rank_node.text(strip=True).replace(",", "")
+        if rank_text.isdigit():
+            hostname = hostname_node.text(strip=True) if hostname_node is not None else ""
+            ranked.append((int(rank_text), hostname))
+    return ranked
+
+
+def rejection_reason(hostname: str, extractor: tldextract.TLDExtract) -> str:
+    candidate = hostname.strip().strip(".")
+    try:
+        ip_address(candidate)
+    except ValueError:
+        pass
+    else:
+        return "ip_address"
+    normalized = normalize_hostname(hostname)
+    if normalized is None:
+        return "invalid_hostname"
+    extracted = extractor(normalized)
+    if not extracted.domain or not extracted.suffix:
+        return "non_registrable_domain"
+    return "unknown"
+
+
 def deduplicate(entries: list[ParsedSite], limit: int | None = None) -> list[SiteEntry]:
     unique: list[SiteEntry] = []
     seen: set[str] = set()
@@ -173,8 +214,8 @@ def deduplicate(entries: list[ParsedSite], limit: int | None = None) -> list[Sit
     return unique
 
 
-def validate_source_ranks(entries: list[ParsedSite]) -> None:
-    ranks = sorted(entry.source_rank for entry in entries)
+def validate_source_ranks(ranks: Sequence[int]) -> None:
+    ranks = sorted(ranks)
     if not ranks or ranks[0] != 1:
         raise CrawlError("the complete ranking did not start at source rank 1")
     for expected, actual in enumerate(ranks, start=1):
@@ -386,10 +427,11 @@ class ChinazCrawler:
             raise CrawlError("page 1 contained no parseable ranking entries")
 
         parsed: list[ParsedSite] = list(first_entries)
+        ranked_hostnames = parse_ranked_hostnames(first_html)
         source_update_dates = {source_updated_at}
         fetched_pages = 1
         if progress is not None:
-            progress(fetched_pages, max_pages, len(parsed))
+            progress(fetched_pages, max_pages, len(ranked_hostnames))
 
         batch_size = max(20, self.workers * 5)
         for batch_start in range(2, max_pages + 1, batch_size):
@@ -401,20 +443,29 @@ class ChinazCrawler:
                 if page_updated_at is None:
                     raise CrawlError(f"page {page} did not contain the ranking update date")
                 source_update_dates.add(page_updated_at)
+                ranked_hostnames.extend(parse_ranked_hostnames(fetched[page]))
                 page_entries = parse_page(fetched[page], page, self._extractor)
                 if not page_entries:
                     raise CrawlError(f"page {page} contained no parseable ranking entries")
                 parsed.extend(page_entries)
             fetched_pages += len(pages)
             if progress is not None:
-                progress(fetched_pages, max_pages, len(parsed))
+                progress(fetched_pages, max_pages, len(ranked_hostnames))
 
-        validate_source_ranks(parsed)
+        validate_source_ranks([rank for rank, _ in ranked_hostnames])
+        parsed_ranks = {entry.source_rank for entry in parsed}
+        rejected_entries = tuple(
+            RejectedSite(rank, hostname, rejection_reason(hostname, self._extractor))
+            for rank, hostname in ranked_hostnames
+            if rank not in parsed_ranks
+        )
         return FullCrawlResult(
             entries=deduplicate(parsed),
             fetched_pages=fetched_pages,
             max_pages=max_pages,
-            source_entries=len(parsed),
+            source_entries=len(ranked_hostnames),
+            parsed_source_entries=len(parsed),
+            rejected_entries=rejected_entries,
             source_updated_at=source_updated_at,
             source_update_dates=tuple(sorted(source_update_dates)),
         )

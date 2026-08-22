@@ -17,7 +17,7 @@ python -m pip install -e .
 安装 Wheel 后也可以直接使用：
 
 ```powershell
-python -m pip install .\chinaz_top_domains-0.1.3-py3-none-any.whl
+python -m pip install .\chinaz_top_domains-0.1.4-py3-none-any.whl
 chinaz-top-domains --version
 ```
 
@@ -50,6 +50,8 @@ chinaz-top-domains --full `
 全量模式默认使用单线程，并保证相邻请求至少间隔 2 秒。缓存根目录会按榜单更新日期自动分层。任务中断后，使用相同命令继续；同周期结果及哈希都有效时，工具直接退出。
 
 ChinaZ 各分页显示的更新日期可能不同。工具会在 `manifest.json` 的 `source_update_dates` 中记录全部观察值，并在完整抓取结束后重新检查第一页日期和最大页数；抓取期间源榜单元数据发生变化时，不发布结果。
+
+页面原始排名必须从 1 连续到最后一名。IP 地址、公共后缀本身或其他无法转换为注册域名的条目不会进入域名列表，但会记录在 `filtered_source_entries` 中，不会被伪装成排名缺口。
 
 完整结果：
 
