@@ -4,8 +4,8 @@ updates:
   - package-ecosystem: pip
     directory: /
     schedule:
-      interval: daily
-      time: "04:07"
+      interval: cron
+      cronjob: "7 4 * * *"
       timezone: Asia/Shanghai
     labels:
       - dependencies
@@ -26,8 +26,8 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: daily
-      time: "04:17"
+      interval: cron
+      cronjob: "17 4 * * *"
       timezone: Asia/Shanghai
     labels:
       - dependencies
