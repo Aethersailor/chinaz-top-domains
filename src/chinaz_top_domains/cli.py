@@ -61,7 +61,7 @@ def snapshot_limits(value: str) -> tuple[int, ...]:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="chinaz-top-domains",
-        description="抓取 ChinaZ 网站总排名，输出归一化并去重的注册域名。"
+        description="抓取 ChinaZ 网站总排名，输出归一化并去重的注册域名。",
     )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--limit", type=positive_int, help="输出指定数量的唯一注册域名（默认：500）")
