@@ -1,5 +1,7 @@
 # ChinaZ Top Domains
 
+> **每日数据：** 已采集的域名文件保存在 [`data` 分支](https://github.com/Aethersailor/chinaz-top-domains/tree/data)，每日自动更新。
+
 从 ChinaZ「中文网站总排名」提取主机名，规范化为 eTLD+1，并按原排名生成去重域名列表。
 
 > 本项目为非官方工具，与 ChinaZ／站长之家无隶属、授权或合作关系。榜单收录只作为候选发现信号，不代表域名所有权、运营主体或网络基础设施位于中国。
