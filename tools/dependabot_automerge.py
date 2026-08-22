@@ -7,7 +7,6 @@ import os
 import re
 import sys
 import urllib.error
-import urllib.parse
 import urllib.request
 from typing import Any
 
@@ -73,25 +72,6 @@ def validate_pull_request(pull: dict[str, Any], repository: str, head_sha: str) 
         raise RuntimeError("Dependabot PR validation failed: " + ", ".join(rejected))
 
 
-def required_workflows_succeeded(repository: str, head_sha: str) -> bool:
-    query = urllib.parse.urlencode({"head_sha": head_sha, "event": "pull_request", "per_page": 100})
-    runs = api("GET", f"/repos/{repository}/actions/runs?{query}")["workflow_runs"]
-    required = [name.strip() for name in os.environ["REQUIRED_WORKFLOWS"].split(",")]
-
-    for name in required:
-        candidates = [run for run in runs if run["name"] == name]
-        if not candidates:
-            print(f"Waiting for required workflow: {name}")
-            return False
-        latest = max(candidates, key=lambda run: (run["run_attempt"], run["id"]))
-        if latest["status"] != "completed" or latest["conclusion"] != "success":
-            print(
-                f"Waiting for {name}: status={latest['status']} conclusion={latest['conclusion']}"
-            )
-            return False
-    return True
-
-
 def enable_auto_merge(pull: dict[str, Any]) -> None:
     response = api(
         "POST",
@@ -138,15 +118,10 @@ def main() -> int:
         return 0
 
     validate_pull_request(pull, repository, head_sha)
-    if not required_workflows_succeeded(repository, head_sha):
-        return 0
-
+    # Branch rules remain authoritative for every required CI and security check.
     # Re-read immediately before enabling auto-merge to close the synchronize race window.
     pull = api("GET", f"/repos/{repository}/pulls/{pull['number']}")
     validate_pull_request(pull, repository, head_sha)
-    if pull.get("mergeable_state") != "clean":
-        print(f"Waiting for a current, mergeable branch: state={pull.get('mergeable_state')}")
-        return 0
     if pull.get("auto_merge") is not None:
         print(f"Auto-merge is already enabled for Dependabot PR #{pull['number']}.")
         return 0
