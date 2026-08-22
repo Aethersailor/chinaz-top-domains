@@ -61,6 +61,14 @@ output/full/
 └── manifest.json
 ```
 
+发布前独立验证完整结果：
+
+```powershell
+chinaz-top-domains --verify-output output/full
+```
+
+验证覆盖文件 SHA-256、实际行数、域名唯一性、Top 文件前缀关系和 `ranking.csv` 域名顺序。
+
 如果完整榜单不足 100,000 个唯一注册域名，`top100000.txt` 包含全部可用域名。`manifest.json` 中对应快照的 `complete` 为 `false`，`actual` 记录实际行数。工具不会通过重复域名凑满数量。
 
 ## 输出规则
@@ -99,6 +107,8 @@ page
 - `data`：最新域名 TXT、`ranking.csv` 和 `manifest.json`，不包含工具源码和抓取缓存。
 
 GitHub Actions 只测试、构建并发布工具本体的 `v*` Release。域名抓取不在 Actions 中运行；域名数据也不创建 GitHub Release。
+
+RFCHost 使用 `deploy/run-and-publish.sh` 生成并验证结果。内容发生变化时，脚本使用 `chore(data): publish YYYY-MM-DD snapshot` 提交标题更新 `data` 分支；内容未变化时不提交。
 
 ## 工具发布产物
 

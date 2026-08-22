@@ -26,3 +26,5 @@ feat(cli): add snapshot selection
 fix(crawler): stop on rate limiting
 docs(readme): clarify data boundaries
 ```
+
+Commit 标题最长 100 个字符，不使用句号结尾。CI 会检查本次推送或 Pull Request 中的所有标题；`master` 和 `data` 分支遵循同一规则。
