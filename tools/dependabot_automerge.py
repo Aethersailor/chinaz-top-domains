@@ -107,6 +107,9 @@ def main() -> int:
     pull = resolve_pull_request(repository, head_sha)
     if pull is None:
         return 0
+    if pull["user"]["login"] != "dependabot[bot]":
+        print(f"PR #{pull['number']} is not authored by Dependabot; nothing to do.")
+        return 0
 
     validate_pull_request(pull, repository, head_sha)
     if not required_workflows_succeeded(repository, head_sha):
