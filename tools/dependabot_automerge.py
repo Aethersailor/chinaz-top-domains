@@ -6,6 +6,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.error
 import urllib.request
 from typing import Any
@@ -120,11 +121,40 @@ def enable_auto_merge(pull: dict[str, Any], headline: str) -> None:
         raise RuntimeError(f"GitHub did not enable auto-merge: {errors}")
 
 
+def dispatch_master_checks(repository: str) -> None:
+    for workflow in ("ci.yml", "codeql.yml"):
+        api(
+            "POST",
+            f"/repos/{repository}/actions/workflows/{workflow}/dispatches",
+            {"ref": "master"},
+        )
+
+
+def wait_for_merge(repository: str, number: int, head_sha: str) -> None:
+    for _ in range(60):
+        pull = api("GET", f"/repos/{repository}/pulls/{number}")
+        if pull.get("merged"):
+            dispatch_master_checks(repository)
+            print(
+                f"Dependabot PR #{number} merged as {pull['merge_commit_sha']}; "
+                "dispatched master CI and CodeQL."
+            )
+            return
+        if pull["state"] != "open" or pull["head"]["sha"] != head_sha:
+            print(f"Dependabot PR #{number} changed while waiting; stopping this revision.")
+            return
+        time.sleep(5)
+    print(f"Auto-merge for Dependabot PR #{number} remains pending after five minutes.")
+
+
 def main() -> int:
     repository = os.environ["GITHUB_REPOSITORY"]
     head_sha = os.environ["WORKFLOW_RUN_HEAD_SHA"]
     pull = resolve_pull_request(repository, head_sha)
     if pull is None:
+        return 0
+    if pull["state"] != "open":
+        print(f"PR #{pull['number']} is already closed; nothing to do.")
         return 0
     if pull["user"]["login"] != "dependabot[bot]":
         print(f"PR #{pull['number']} is not authored by Dependabot; nothing to do.")
@@ -137,11 +167,11 @@ def main() -> int:
     validate_pull_request(pull, repository, head_sha)
     if pull.get("auto_merge") is not None:
         print(f"Auto-merge is already enabled for Dependabot PR #{pull['number']}.")
-        return 0
-
-    headline = dependabot_commit_headline(repository, pull, head_sha)
-    enable_auto_merge(pull, headline)
-    print(f"Enabled squash auto-merge for Dependabot PR #{pull['number']} at {head_sha}.")
+    else:
+        headline = dependabot_commit_headline(repository, pull, head_sha)
+        enable_auto_merge(pull, headline)
+        print(f"Enabled squash auto-merge for Dependabot PR #{pull['number']} at {head_sha}.")
+    wait_for_merge(repository, pull["number"], head_sha)
     return 0
 
 
