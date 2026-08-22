@@ -1,0 +1,41 @@
+version: 2
+
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: daily
+      time: "04:07"
+      timezone: Asia/Shanghai
+    labels:
+      - dependencies
+      - automerge
+    open-pull-requests-limit: 20
+    rebase-strategy: auto
+    commit-message:
+      prefix: "build(deps)"
+      prefix-development: "build(deps-dev)"
+    groups:
+      production-minor-and-patch:
+        dependency-type: production
+        update-types: [minor, patch]
+      development-minor-and-patch:
+        dependency-type: development
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+      time: "04:17"
+      timezone: Asia/Shanghai
+    labels:
+      - dependencies
+      - automerge
+    open-pull-requests-limit: 20
+    rebase-strategy: auto
+    commit-message:
+      prefix: "ci(deps)"
+    groups:
+      actions-minor-and-patch:
+        update-types: [minor, patch]
