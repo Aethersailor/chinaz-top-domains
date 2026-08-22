@@ -1,0 +1,9 @@
+*
+!.gitignore
+!README.md
+!top500.txt
+!top10000.txt
+!top100000.txt
+!all.txt
+!ranking.csv
+!manifest.json
