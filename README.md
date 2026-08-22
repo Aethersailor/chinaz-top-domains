@@ -17,7 +17,7 @@ python -m pip install -e .
 安装 Wheel 后也可以直接使用：
 
 ```powershell
-python -m pip install .\chinaz_top_domains-0.1.1-py3-none-any.whl
+python -m pip install .\chinaz_top_domains-0.1.2-py3-none-any.whl
 chinaz-top-domains --version
 ```
 
