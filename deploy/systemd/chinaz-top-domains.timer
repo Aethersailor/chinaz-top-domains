@@ -1,0 +1,11 @@
+[Unit]
+Description=Check ChinaZ ranking for an updated snapshot each day
+
+[Timer]
+OnCalendar=*-*-* 03:17:00 Asia/Shanghai
+RandomizedDelaySec=30m
+Persistent=true
+Unit=chinaz-top-domains.service
+
+[Install]
+WantedBy=timers.target
