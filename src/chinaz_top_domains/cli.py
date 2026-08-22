@@ -20,6 +20,13 @@ from .integrity import IntegrityError, sha256_file, verify_output_directory
 DEFAULT_SNAPSHOTS = (500, 10_000, 100_000)
 
 
+def configure_stdio() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
+
+
 def positive_int(value: str) -> int:
     parsed = int(value)
     if parsed < 1:
@@ -355,6 +362,7 @@ def _run(args: argparse.Namespace, output_dir: Path) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    configure_stdio()
     args = build_parser().parse_args(argv)
     if args.snapshots is not None and not args.full:
         print("错误：--snapshots 只能与 --full 一起使用。", file=sys.stderr)
