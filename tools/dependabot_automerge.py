@@ -7,7 +7,6 @@ import os
 import re
 import sys
 import urllib.error
-import urllib.parse
 import urllib.request
 from typing import Any
 
@@ -73,32 +72,39 @@ def validate_pull_request(pull: dict[str, Any], repository: str, head_sha: str) 
         raise RuntimeError("Dependabot PR validation failed: " + ", ".join(rejected))
 
 
-def required_workflows_succeeded(repository: str, head_sha: str) -> bool:
-    query = urllib.parse.urlencode({"head_sha": head_sha, "event": "pull_request", "per_page": 100})
-    runs = api("GET", f"/repos/{repository}/actions/runs?{query}")["workflow_runs"]
-    required = [name.strip() for name in os.environ["REQUIRED_WORKFLOWS"].split(",")]
-
-    for name in required:
-        candidates = [run for run in runs if run["name"] == name]
-        if not candidates:
-            print(f"Waiting for required workflow: {name}")
-            return False
-        latest = max(candidates, key=lambda run: (run["run_attempt"], run["id"]))
-        if latest["status"] != "completed" or latest["conclusion"] != "success":
-            print(
-                f"Waiting for {name}: status={latest['status']} conclusion={latest['conclusion']}"
-            )
-            return False
-    return True
-
-
-def dispatch_master_checks(repository: str) -> None:
-    for workflow in ("ci.yml", "codeql.yml"):
-        api(
-            "POST",
-            f"/repos/{repository}/actions/workflows/{workflow}/dispatches",
-            {"ref": "master"},
-        )
+def enable_auto_merge(pull: dict[str, Any]) -> None:
+    response = api(
+        "POST",
+        "/graphql",
+        {
+            "query": """
+                mutation EnableAutoMerge(
+                  $pullRequestId: ID!
+                  $headline: String!
+                  $body: String!
+                ) {
+                  enablePullRequestAutoMerge(input: {
+                    pullRequestId: $pullRequestId
+                    mergeMethod: SQUASH
+                    commitHeadline: $headline
+                    commitBody: $body
+                  }) {
+                    pullRequest {
+                      number
+                      autoMergeRequest { enabledAt }
+                    }
+                  }
+                }
+            """,
+            "variables": {
+                "pullRequestId": pull["node_id"],
+                "headline": pull["title"],
+                "body": "Automated Dependabot update.",
+            },
+        },
+    )
+    if errors := response.get("errors"):
+        raise RuntimeError(f"GitHub did not enable auto-merge: {errors}")
 
 
 def main() -> int:
@@ -112,28 +118,16 @@ def main() -> int:
         return 0
 
     validate_pull_request(pull, repository, head_sha)
-    if not required_workflows_succeeded(repository, head_sha):
-        return 0
-
-    # Re-read immediately before merging to close the synchronize race window.
+    # Branch rules remain authoritative for every required CI and security check.
+    # Re-read immediately before enabling auto-merge to close the synchronize race window.
     pull = api("GET", f"/repos/{repository}/pulls/{pull['number']}")
     validate_pull_request(pull, repository, head_sha)
-    result = api(
-        "PUT",
-        f"/repos/{repository}/pulls/{pull['number']}/merge",
-        {
-            "sha": head_sha,
-            "merge_method": "squash",
-            "commit_title": pull["title"],
-            "commit_message": "Automated Dependabot update.",
-        },
-    )
-    if not result.get("merged"):
-        raise RuntimeError(f"GitHub did not merge PR #{pull['number']}: {result}")
+    if pull.get("auto_merge") is not None:
+        print(f"Auto-merge is already enabled for Dependabot PR #{pull['number']}.")
+        return 0
 
-    print(f"Merged Dependabot PR #{pull['number']} at {head_sha}.")
-    dispatch_master_checks(repository)
-    print("Dispatched post-merge CI and CodeQL checks on master.")
+    enable_auto_merge(pull)
+    print(f"Enabled squash auto-merge for Dependabot PR #{pull['number']} at {head_sha}.")
     return 0
 
 
