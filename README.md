@@ -1,6 +1,6 @@
 # ChinaZ Top Domains
 
-> **每日数据：** 已采集的域名文件保存在 [`data` 分支](https://github.com/Aethersailor/chinaz-top-domains/tree/data)，每日自动更新。
+> **每日数据：** 已采集的域名文件保存在 [`data` 分支](https://github.com/Aethersailor/chinaz-top-domains/tree/data)。系统每日自动检查；源榜单变化时更新域名文件，并在 `status.json` 记录每日检查结果。
 
 从 ChinaZ「中文网站总排名」提取主机名，规范化为 eTLD+1，并按原排名生成去重域名列表。
 
@@ -110,11 +110,11 @@ page
 ## 仓库分支
 
 - `master`：工具源码、测试、文档和工具构建工作流。
-- `data`：最新域名 TXT、`ranking.csv` 和 `manifest.json`，不包含工具源码和抓取缓存。
+- `data`：最新域名 TXT、`ranking.csv`、`manifest.json` 和每日检查状态，不包含工具源码和抓取缓存。
 
 GitHub Actions 只测试、构建并发布工具本体的 `v*` Release。域名抓取不在 Actions 中运行；域名数据也不创建 GitHub Release。
 
-每日采集任务使用 `deploy/run-and-publish.sh` 生成并验证结果。内容发生变化时，脚本使用 `chore(data): publish YYYY-MM-DD snapshot` 提交标题更新 `data` 分支；内容未变化时不提交。
+每日采集任务使用 `deploy/run-and-publish.sh` 生成并验证结果。源榜单变化时，脚本使用 `chore(data): publish YYYY-MM-DD snapshot` 更新域名文件；内容未变化时，使用 `chore(data): record YYYY-MM-DD check` 记录当天检查结果。同一天重复运行不会重复提交。
 
 ## 工具发布产物
 

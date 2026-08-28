@@ -16,7 +16,8 @@ GIT_AUTHOR_EMAIL=${GIT_AUTHOR_EMAIL:-22260104+Aethersailor@users.noreply.github.
 
 APP=${APP_ROOT}/venv/bin/chinaz-top-domains
 PYTHON=${APP_ROOT}/venv/bin/python
-PUBLISH_FILES=(top500.txt top10000.txt top100000.txt all.txt ranking.csv manifest.json)
+DATA_FILES=(top500.txt top10000.txt top100000.txt all.txt ranking.csv manifest.json)
+STATUS_FILE=status.json
 
 export GIT_SSH_COMMAND="ssh -i ${DEPLOY_KEY} -o IdentitiesOnly=yes -o BatchMode=yes"
 
@@ -31,23 +32,74 @@ else
     git -C "${DATA_CHECKOUT}" merge --ff-only origin/data
 fi
 
-for filename in "${PUBLISH_FILES[@]}"; do
+for filename in "${DATA_FILES[@]}"; do
     install -m 0644 "${OUTPUT_DIR}/${filename}" "${DATA_CHECKOUT}/${filename}"
 done
 "${APP}" --verify-output "${DATA_CHECKOUT}"
 
 git -C "${DATA_CHECKOUT}" config user.name "${GIT_AUTHOR_NAME}"
 git -C "${DATA_CHECKOUT}" config user.email "${GIT_AUTHOR_EMAIL}"
-git -C "${DATA_CHECKOUT}" add -- "${PUBLISH_FILES[@]}"
+git -C "${DATA_CHECKOUT}" add -- "${DATA_FILES[@]}"
 
-if git -C "${DATA_CHECKOUT}" diff --cached --quiet; then
-    echo "Generated data is unchanged; data branch was not updated."
+data_changed=true
+if git -C "${DATA_CHECKOUT}" diff --cached --quiet -- "${DATA_FILES[@]}"; then
+    data_changed=false
+fi
+
+checked_on=$(TZ=Asia/Shanghai date +%F)
+existing_checked_on=$(
+    "${PYTHON}" -c \
+        'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8")).get("checked_on", ""))' \
+        "${DATA_CHECKOUT}/${STATUS_FILE}" 2>/dev/null || true
+)
+
+if [[ "${data_changed}" == false && "${existing_checked_on}" == "${checked_on}" ]]; then
+    echo "Generated data is unchanged; today's check is already recorded."
     exit 0
 fi
 
+"${PYTHON}" - "${DATA_CHECKOUT}/manifest.json" "${DATA_CHECKOUT}/${STATUS_FILE}" \
+    "${checked_on}" "${data_changed}" <<'PY'
+import json
+import os
+import sys
+from pathlib import Path
+
+manifest_path = Path(sys.argv[1])
+status_path = Path(sys.argv[2])
+checked_on = sys.argv[3]
+data_changed = sys.argv[4] == "true"
+
+with manifest_path.open(encoding="utf-8") as handle:
+    manifest = json.load(handle)
+
+status = {
+    "schema_version": 1,
+    "checked_on": checked_on,
+    "source_updated_at": manifest["source_updated_at"],
+    "data_changed": data_changed,
+    "tool_version": manifest["tool_version"],
+    "source_entries": manifest["source_entries"],
+    "unique_domains": manifest["unique_domains"],
+}
+temporary_path = status_path.with_suffix(status_path.suffix + ".tmp")
+temporary_path.write_text(
+    json.dumps(status, ensure_ascii=False, indent=2) + "\n",
+    encoding="utf-8",
+    newline="\n",
+)
+os.replace(temporary_path, status_path)
+PY
+
+git -C "${DATA_CHECKOUT}" add -- "${STATUS_FILE}"
 git -C "${DATA_CHECKOUT}" diff --cached --check
 source_date=$("${PYTHON}" -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["source_updated_at"])' "${OUTPUT_DIR}/manifest.json")
-git -C "${DATA_CHECKOUT}" commit -m "chore(data): publish ${source_date} snapshot"
+if [[ "${data_changed}" == true ]]; then
+    commit_title="chore(data): publish ${source_date} snapshot"
+else
+    commit_title="chore(data): record ${checked_on} check"
+fi
+git -C "${DATA_CHECKOUT}" commit -m "${commit_title}"
 git -C "${DATA_CHECKOUT}" push origin HEAD:data
 
 remote_head=$(git -C "${DATA_CHECKOUT}" ls-remote origin refs/heads/data | cut -f1)
