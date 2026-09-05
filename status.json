@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "checked_on": "2026-09-04",
-  "source_updated_at": "2026-08-16",
-  "data_changed": false,
+  "checked_on": "2026-09-06",
+  "source_updated_at": "2026-08-30",
+  "data_changed": true,
   "tool_version": "0.1.4",
   "source_entries": 103707,
-  "unique_domains": 88658
+  "unique_domains": 88671
 }
