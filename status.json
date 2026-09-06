@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "checked_on": "2026-09-06",
+  "checked_on": "2026-09-07",
   "source_updated_at": "2026-08-30",
-  "data_changed": true,
+  "data_changed": false,
   "tool_version": "0.1.4",
   "source_entries": 103707,
   "unique_domains": 88671
