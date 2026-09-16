@@ -1,52 +1,52 @@
 {
   "schema_version": 1,
   "tool_version": "0.1.4",
-  "generated_at": "2026-09-05T21:17:13.971563+00:00",
+  "generated_at": "2026-09-16T21:14:51.511958+00:00",
   "source": "https://top.chinaz.com/all/",
-  "source_updated_at": "2026-08-30",
+  "source_updated_at": "2026-09-13",
   "source_update_dates": [
-    "2026-08-30"
+    "2026-09-13"
   ],
   "source_entries": 103707,
   "parsed_source_entries": 103699,
   "filtered_source_entries": [
     {
-      "source_rank": 60252,
+      "source_rank": 59880,
       "hostname": "%E5%8C%97%E9%BE%99%E4%B8%AD%E7%BD%91.%E7%BD%91%E5%9D%80",
       "reason": "non_registrable_domain"
     },
     {
-      "source_rank": 67269,
+      "source_rank": 66942,
       "hostname": "edu.cn",
       "reason": "non_registrable_domain"
     },
     {
-      "source_rank": 77153,
+      "source_rank": 77030,
       "hostname": "gov.cn",
       "reason": "non_registrable_domain"
     },
     {
-      "source_rank": 98832,
+      "source_rank": 98960,
       "hostname": "210.42.121.241",
       "reason": "ip_address"
     },
     {
-      "source_rank": 101191,
-      "hostname": "net.cn",
-      "reason": "non_registrable_domain"
-    },
-    {
-      "source_rank": 101271,
+      "source_rank": 102405,
       "hostname": "nx.cn",
       "reason": "non_registrable_domain"
     },
     {
-      "source_rank": 101614,
+      "source_rank": 102714,
       "hostname": "jx.cn",
       "reason": "non_registrable_domain"
     },
     {
-      "source_rank": 103436,
+      "source_rank": 102769,
+      "hostname": "net.cn",
+      "reason": "non_registrable_domain"
+    },
+    {
+      "source_rank": 103187,
       "hostname": "183.136.132.24",
       "reason": "ip_address"
     }
@@ -59,29 +59,29 @@
       "requested": 500,
       "actual": 500,
       "complete": true,
-      "sha256": "754de1f91f4d2c5a44e50aa7f7698dc97bae98576c4d8ea80cdf3022dd33b002"
+      "sha256": "fe53977b84fc5f10b00eaa5b0a7d1c870620b5f29de15bc00947dbfe3af7d10f"
     },
     "top10000.txt": {
       "requested": 10000,
       "actual": 10000,
       "complete": true,
-      "sha256": "729fe4309d337628fbd2814104331671fa33e4350bfa5e20f6a6864ee69f26df"
+      "sha256": "5b52784ecaa93cafef452eeb83c5b98fc727b6493595b97d39bfc73f3af3ef18"
     },
     "top100000.txt": {
       "requested": 100000,
       "actual": 88671,
       "complete": false,
-      "sha256": "d0d7ded0e51c7992447e623aeae24e6e301ccd19da14cbd89cab1aa4eaa62ca6"
+      "sha256": "55691930609f02e3d1d6d09e3e6569f9867d33029030983faa915dc9b00967a2"
     }
   },
   "all": {
     "file": "all.txt",
     "actual": 88671,
-    "sha256": "d0d7ded0e51c7992447e623aeae24e6e301ccd19da14cbd89cab1aa4eaa62ca6"
+    "sha256": "55691930609f02e3d1d6d09e3e6569f9867d33029030983faa915dc9b00967a2"
   },
   "ranking": {
     "file": "ranking.csv",
     "rows": 88671,
-    "sha256": "7912ca07425c93442fdf189fa4bc04b7a3d4a8cda6db4631ebbfb49071d308fa"
+    "sha256": "c2ed846dbde4a1c484e30f51432d669b2d0724b4537be2cb65c04d695d83fa76"
   }
 }
