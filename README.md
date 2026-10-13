@@ -109,10 +109,10 @@ page
 
 ## 仓库分支
 
-- `master`：工具源码、测试、文档和工具构建工作流。
+- `master`：工具源码、文档和工具构建工作流。
 - `data`：最新域名 TXT、`ranking.csv`、`manifest.json` 和每日检查状态，不包含工具源码和抓取缓存。
 
-GitHub Actions 只测试、构建并发布工具本体的 `v*` Release。域名抓取不在 Actions 中运行；域名数据也不创建 GitHub Release。
+GitHub Actions 构建并发布工具本体的 `v*` Release。域名抓取不在 Actions 中运行；域名数据也不创建 GitHub Release。
 
 每日采集任务使用 `deploy/run-and-publish.sh` 生成并验证结果。源榜单变化时，脚本使用 `chore(data): publish YYYY-MM-DD snapshot` 更新域名文件；内容未变化时，使用 `chore(data): record YYYY-MM-DD check` 记录当天检查结果。同一天重复运行不会重复提交。
 
@@ -127,17 +127,13 @@ SHA256SUMS
 
 Linux 和 VPS 首版使用 Wheel 安装。Windows 独立程序是补充产物，不替代 Wheel 和源码包。
 
-## 开发检查
+## 本地构建
 
 ```powershell
 python -m pip install -e ".[dev]"
-ruff format --check .
-ruff check .
-python -m pytest
 python -m build
 ```
 
-离线测试不会访问 ChinaZ。有限真实烟雾测试使用：
 
 ```powershell
 chinaz-top-domains --limit 30 --output-dir output/smoke

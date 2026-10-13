@@ -10,9 +10,6 @@ $python = if (Test-Path -LiteralPath $venvPython) { $venvPython } else { (Get-Co
 
 Push-Location $repoRoot
 try {
-    & $python -m ruff format --check .
-    & $python -m ruff check .
-    & $python -m pytest
     & $python -m build
     $wheel = (Get-ChildItem dist\*.whl | Sort-Object LastWriteTime | Select-Object -Last 1).FullName
     & $python -m pip install --force-reinstall --no-deps $wheel

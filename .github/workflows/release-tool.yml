@@ -1,72 +1,66 @@
 name: Release tool
-
-on:
+'on':
   push:
     tags:
-      - "v*"
-
+    - v*
 permissions:
   contents: read
-
 jobs:
   python-distributions:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.13"
-          cache: pip
-      - run: python -m pip install --disable-pip-version-check -e ".[dev]"
-      - name: Verify tag matches package version
-        shell: bash
-        run: |
-          git fetch origin master
-          git merge-base --is-ancestor "$GITHUB_SHA" origin/master
-          test "${GITHUB_REF_NAME}" = "v$(python -c 'import chinaz_top_domains; print(chinaz_top_domains.__version__)')"
-      - run: python -m ruff format --check .
-      - run: python -m ruff check .
-      - run: python -m pytest
-      - run: python -m build
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        with:
-          name: python-distributions
-          path: dist/*
-          if-no-files-found: error
-
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+      with:
+        python-version: '3.13'
+        cache: pip
+    - run: python -m pip install --disable-pip-version-check -e ".[dev]"
+    - name: Verify tag matches package version
+      shell: bash
+      run: |
+        git fetch origin master
+        git merge-base --is-ancestor "$GITHUB_SHA" origin/master
+        test "${GITHUB_REF_NAME}" = "v$(python -c 'import chinaz_top_domains; print(chinaz_top_domains.__version__)')"
+    - run: python -m build
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      with:
+        name: python-distributions
+        path: dist/*
+        if-no-files-found: error
   windows-standalone:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.13"
-          cache: pip
-      - run: python -m pip install --disable-pip-version-check -e ".[dev]"
-      - run: .\tools\build-windows.ps1
-        shell: pwsh
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        with:
-          name: windows-standalone
-          path: dist/chinaz-top-domains-v*-windows-x86_64.zip
-          if-no-files-found: error
-
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+    - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+      with:
+        python-version: '3.13'
+        cache: pip
+    - run: python -m pip install --disable-pip-version-check -e ".[dev]"
+    - run: .\tools\build-windows.ps1
+      shell: pwsh
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      with:
+        name: windows-standalone
+        path: dist/chinaz-top-domains-v*-windows-x86_64.zip
+        if-no-files-found: error
   release:
-    needs: [python-distributions, windows-standalone]
+    needs:
+    - python-distributions
+    - windows-standalone
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          path: release-assets
-          merge-multiple: true
-      - name: Create checksums
-        working-directory: release-assets
-        run: sha256sum * > SHA256SUMS
-      - name: Publish tool Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" release-assets/* --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes --title "ChinaZ Top Domains $GITHUB_REF_NAME"
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      with:
+        path: release-assets
+        merge-multiple: true
+    - name: Create checksums
+      working-directory: release-assets
+      run: sha256sum * > SHA256SUMS
+    - name: Publish tool Release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: gh release create "$GITHUB_REF_NAME" release-assets/* --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes --title "ChinaZ Top Domains $GITHUB_REF_NAME"

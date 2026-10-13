@@ -1,41 +1,28 @@
 version: 2
-
 updates:
-  - package-ecosystem: pip
-    directory: /
-    schedule:
-      interval: cron
-      cronjob: "7 4 * * *"
-      timezone: Asia/Shanghai
-    labels:
-      - dependencies
-      - automerge
-    open-pull-requests-limit: 20
-    rebase-strategy: auto
-    commit-message:
-      prefix: "build(deps)"
-      prefix-development: "build(deps-dev)"
-    groups:
-      production-minor-and-patch:
-        dependency-type: production
-        update-types: [minor, patch]
-      development-minor-and-patch:
-        dependency-type: development
-        update-types: [minor, patch]
-
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: cron
-      cronjob: "17 4 * * *"
-      timezone: Asia/Shanghai
-    labels:
-      - dependencies
-      - automerge
-    open-pull-requests-limit: 20
-    rebase-strategy: auto
-    commit-message:
-      prefix: "ci(deps)"
-    groups:
-      actions-minor-and-patch:
-        update-types: [minor, patch]
+- package-ecosystem: github-actions
+  directory: /
+  schedule:
+    interval: daily
+    time: 08:00
+    timezone: Asia/Shanghai
+  open-pull-requests-limit: 20
+  groups:
+    dependencies:
+      patterns:
+      - '*'
+  commit-message:
+    prefix: chore(deps)
+- package-ecosystem: pip
+  directory: /
+  schedule:
+    interval: daily
+    time: 08:00
+    timezone: Asia/Shanghai
+  open-pull-requests-limit: 20
+  groups:
+    dependencies:
+      patterns:
+      - '*'
+  commit-message:
+    prefix: chore(deps)

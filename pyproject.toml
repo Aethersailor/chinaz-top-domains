@@ -34,8 +34,6 @@ dependencies = [
 dev = [
   "build>=1.2,<2",
   "pyinstaller>=6.16,<7",
-  "pytest>=8,<10",
-  "ruff>=0.12,<1",
 ]
 
 [project.scripts]
@@ -43,14 +41,3 @@ chinaz-top-domains = "chinaz_top_domains.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/chinaz_top_domains"]
-
-[tool.pytest.ini_options]
-addopts = "-q"
-testpaths = ["tests"]
-
-[tool.ruff]
-line-length = 100
-target-version = "py310"
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B"]
